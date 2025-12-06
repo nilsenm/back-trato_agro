@@ -1,0 +1,1 @@
+<?php$dsn = "mysql:host=localhost;dbname=tratoagr_basededatostratoagro;charset=utf8;";$pdo = new PDO($dsn, "tratoagr_root", "tyga2020..+");?>

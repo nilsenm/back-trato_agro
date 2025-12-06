@@ -1,0 +1,83 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tratoagro_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - tratoagro-network
+    depends_on:
+      - db
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    container_name: tratoagro_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - tratoagro-network
+    depends_on:
+      - app
+
+  db:
+    image: postgres:16-alpine
+    container_name: tratoagro_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tratoagro
+      POSTGRES_USER: tratoagro
+      POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - tratoagro-network
+
+  redis:
+    image: redis:alpine
+    container_name: tratoagro_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - tratoagro-network
+
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: tratoagro_pgadmin
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8081:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@tratoagro.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #   networks:
+  #     - tratoagro-network
+  #   depends_on:
+  #     - db
+
+networks:
+  tratoagro-network:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
+  pgadmin_data:
+    driver: local
+
