@@ -14,6 +14,8 @@ use App\Domain\Interfaces\PersonaRepositoryInterface;
 use App\Domain\Interfaces\VentaRepositoryInterface;
 use App\Domain\Interfaces\DetalleVentaRepositoryInterface;
 use App\Domain\Interfaces\CarritoRepositoryInterface;
+use App\Domain\Interfaces\OfertaRepositoryInterface;
+use App\Domain\Interfaces\MensajeRepositoryInterface;
 use App\Infrastructure\Repositories\CategoriaRepository;
 use App\Infrastructure\Repositories\ProductoRepository;
 use App\Infrastructure\Repositories\StockRepository;
@@ -26,6 +28,8 @@ use App\Infrastructure\Repositories\PersonaRepository;
 use App\Infrastructure\Repositories\VentaRepository;
 use App\Infrastructure\Repositories\DetalleVentaRepository;
 use App\Infrastructure\Repositories\CarritoRepository;
+use App\Infrastructure\Repositories\OfertaRepository;
+use App\Infrastructure\Repositories\MensajeRepository;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -94,6 +98,16 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             CarritoRepositoryInterface::class,
             CarritoRepository::class
+        );
+        
+        $this->app->bind(
+            OfertaRepositoryInterface::class,
+            OfertaRepository::class
+        );
+        
+        $this->app->bind(
+            MensajeRepositoryInterface::class,
+            MensajeRepository::class
         );
     }
 

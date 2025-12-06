@@ -26,5 +26,10 @@ class StockService extends BaseService
     {
         return $this->repository->findConStock();
     }
+
+    public function findDestacados(): array
+    {
+        return $this->repository->findDestacados();
+    }
 }
 

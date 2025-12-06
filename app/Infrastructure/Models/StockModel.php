@@ -19,12 +19,14 @@ class StockModel extends Model
         'id_unidad',
         'tipo_moneda',
         'recibe_ofertas',
+        'destacado',
     ];
 
     protected $casts = [
         'precio' => 'decimal:2',
         'cantidad' => 'integer',
         'recibe_ofertas' => 'boolean',
+        'destacado' => 'boolean',
     ];
 }
 

@@ -12,6 +12,7 @@ class Stock extends BaseEntity
     private ?int $idUnidad;
     private string $tipoMoneda;
     private bool $recibeOfertas;
+    private bool $destacado;
 
     public function __construct(
         int $cantidad,
@@ -21,7 +22,8 @@ class Stock extends BaseEntity
         ?int $idProducto = null,
         ?int $idUnidad = null,
         string $tipoMoneda = 'PEN',
-        bool $recibeOfertas = false
+        bool $recibeOfertas = false,
+        bool $destacado = false
     ) {
         $this->cantidad = $cantidad;
         $this->precio = $precio;
@@ -31,6 +33,7 @@ class Stock extends BaseEntity
         $this->idUnidad = $idUnidad;
         $this->tipoMoneda = $tipoMoneda;
         $this->recibeOfertas = $recibeOfertas;
+        $this->destacado = $destacado;
     }
 
     public function getPrecio(): ?float
@@ -108,6 +111,16 @@ class Stock extends BaseEntity
         $this->recibeOfertas = $recibeOfertas;
     }
 
+    public function isDestacado(): bool
+    {
+        return $this->destacado;
+    }
+
+    public function setDestacado(bool $destacado): void
+    {
+        $this->destacado = $destacado;
+    }
+
     public function toArray(): array
     {
         return [
@@ -120,6 +133,7 @@ class Stock extends BaseEntity
             'id_unidad' => $this->idUnidad,
             'tipo_moneda' => $this->tipoMoneda,
             'recibe_ofertas' => $this->recibeOfertas,
+            'destacado' => $this->destacado,
         ];
     }
 }

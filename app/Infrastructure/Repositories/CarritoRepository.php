@@ -77,6 +77,17 @@ class CarritoRepository extends BaseRepository implements CarritoRepositoryInter
         return $model->update($data);
     }
 
+    public function delete($id): bool
+    {
+        $model = $this->model->find($id);
+        
+        if (!$model) {
+            return false;
+        }
+
+        return $model->delete();
+    }
+
     private function toEntity(CarritoModel $model): Carrito
     {
         $entity = new Carrito(

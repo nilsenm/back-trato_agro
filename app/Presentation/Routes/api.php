@@ -15,6 +15,8 @@ use App\Presentation\Http\Controllers\DetalleVentaController;
 use App\Presentation\Http\Controllers\CarritoController;
 use App\Presentation\Http\Controllers\ConsultaExternaController;
 use App\Presentation\Http\Controllers\ReporteController;
+use App\Presentation\Http\Controllers\OfertaController;
+use App\Presentation\Http\Controllers\MensajeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -49,6 +51,9 @@ Route::middleware(['jwt.auth'])->group(function () {
 Route::middleware(['jwt.auth'])->group(function () {
     Route::apiResource('categorias', CategoriaController::class);
 });
+
+// Productos destacados (público - sin autenticación) - DEBE IR ANTES del apiResource
+Route::get('productos/destacados', [StockController::class, 'destacados']);
 
 // Productos (protegido con JWT)
 Route::middleware(['jwt.auth'])->group(function () {
@@ -147,5 +152,30 @@ Route::post('consultas/ruc', [ConsultaExternaController::class, 'consultarRuc'])
 // Reportes (protegido con JWT)
 Route::middleware(['jwt.auth'])->group(function () {
     Route::get('reportes/ventas/categoria/{idCategoria}', [ReporteController::class, 'ventasPorCategoria']);
+});
+
+// Ofertas (protegido con JWT)
+Route::middleware(['jwt.auth'])->group(function () {
+    Route::post('ofertas', [OfertaController::class, 'store']); // Crear oferta
+    // Rutas específicas DEBEN ir antes de la ruta genérica {id}
+    Route::get('ofertas/stock/{idStock}', [OfertaController::class, 'byStock']); // Ofertas de un producto
+    Route::get('ofertas/mis-ofertas', [OfertaController::class, 'misOfertas']); // Mis ofertas enviadas
+    Route::get('ofertas/recibidas', [OfertaController::class, 'ofertasRecibidas']); // Ofertas recibidas
+    Route::get('ofertas/{id}', [OfertaController::class, 'show']); // Ver oferta (genérica - debe ir al final)
+    Route::post('ofertas/{id}/aceptar', [OfertaController::class, 'aceptar']); // Aceptar oferta
+    Route::post('ofertas/{id}/rechazar', [OfertaController::class, 'rechazar']); // Rechazar oferta
+    Route::post('ofertas/{id}/cancelar', [OfertaController::class, 'cancelar']); // Cancelar oferta
+});
+
+// Mensajes (protegido con JWT)
+Route::middleware(['jwt.auth'])->group(function () {
+    Route::post('mensajes', [MensajeController::class, 'store']); // Enviar mensaje
+    Route::get('mensajes/{id}', [MensajeController::class, 'show']); // Ver mensaje
+    Route::get('mensajes/oferta/{idOferta}', [MensajeController::class, 'byOferta']); // Mensajes de una oferta
+    Route::get('mensajes/conversacion/{idUsuario}', [MensajeController::class, 'conversacion']); // Conversación con usuario
+    Route::get('mensajes/enviados', [MensajeController::class, 'mensajesEnviados']); // Mensajes enviados
+    Route::get('mensajes/recibidos', [MensajeController::class, 'mensajesRecibidos']); // Mensajes recibidos
+    Route::post('mensajes/{id}/leido', [MensajeController::class, 'marcarLeido']); // Marcar como leído
+    Route::get('mensajes/no-leidos/cantidad', [MensajeController::class, 'contarNoLeidos']); // Contar no leídos
 });
 

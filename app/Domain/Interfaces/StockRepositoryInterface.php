@@ -11,6 +11,8 @@ interface StockRepositoryInterface extends RepositoryInterface
     public function findByProducto(int $idProducto): array;
     
     public function findConStock(): array;
+    
+    public function findDestacados(): array;
 }
 
 

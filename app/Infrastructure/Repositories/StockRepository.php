@@ -40,6 +40,17 @@ class StockRepository extends BaseRepository implements StockRepositoryInterface
         })->toArray();
     }
 
+    public function findDestacados(): array
+    {
+        $models = $this->model->where('destacado', true)
+            ->where('cantidad', '>', 0)
+            ->get();
+        
+        return $models->map(function ($model) {
+            return $this->toEntity($model);
+        })->toArray();
+    }
+
     public function find($id): ?Stock
     {
         $model = parent::find($id);
@@ -66,6 +77,28 @@ class StockRepository extends BaseRepository implements StockRepositoryInterface
         return $this->toEntity($model);
     }
 
+    public function update($id, array $data): bool
+    {
+        $model = $this->model->find($id);
+        
+        if (!$model) {
+            return false;
+        }
+
+        return $model->update($data);
+    }
+
+    public function delete($id): bool
+    {
+        $model = $this->model->find($id);
+        
+        if (!$model) {
+            return false;
+        }
+
+        return $model->delete();
+    }
+
     private function toEntity(StockModel $model): Stock
     {
         $entity = new Stock(
@@ -76,7 +109,8 @@ class StockRepository extends BaseRepository implements StockRepositoryInterface
             $model->id_producto,
             $model->id_unidad,
             $model->tipo_moneda ?? 'PEN',
-            $model->recibe_ofertas ?? false
+            $model->recibe_ofertas ?? false,
+            $model->destacado ?? false
         );
         
         if ($model->id_stock) {

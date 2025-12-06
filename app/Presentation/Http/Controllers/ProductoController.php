@@ -157,6 +157,7 @@ class ProductoController extends BaseController
                 'id_unidad' => 'nullable|integer|exists:unidad,id_unidad',
                 'tipo_moneda' => 'nullable|string|in:PEN,USD',
                 'recibe_ofertas' => 'nullable|boolean',
+                'destacado' => 'nullable|boolean',
             ]);
 
             // Si se envía cantidad, crear producto + stock
@@ -182,6 +183,7 @@ class ProductoController extends BaseController
                     'id_unidad' => $validated['id_unidad'] ?? null,
                     'tipo_moneda' => $validated['tipo_moneda'] ?? 'PEN',
                     'recibe_ofertas' => $validated['recibe_ofertas'] ?? false,
+                    'destacado' => $validated['destacado'] ?? false,
                     'imagen' => $imagenProducto ?? null,
                 ];
 
@@ -239,28 +241,171 @@ class ProductoController extends BaseController
     public function update(Request $request, int $id): JsonResponse
     {
         try {
+            // Obtener usuario autenticado
+            $user = JWTAuth::parseToken()->authenticate();
+            if (!$user) {
+                return $this->errorResponse(
+                    message: 'Usuario no autenticado',
+                    code: 401,
+                    codeError: '401',
+                    title: 'Error de autenticación'
+                );
+            }
+
             $validated = $request->validate([
+                // Campos del producto
                 'nombre' => 'sometimes|string|max:300',
                 'descripcion' => 'nullable|string',
                 'imagen' => 'nullable|string', // Puede ser URL, base64 o ruta
                 'id_subcategoria' => 'nullable|integer|exists:subcategoria,id_subcategoria',
+                'estado' => 'nullable|string|in:ACTIVO,INACTIVO',
+                // Campos del stock
+                'precio' => 'nullable|numeric|min:0',
+                'cantidad' => 'nullable|integer|min:0',
+                'id_unidad' => 'nullable|integer|exists:unidad,id_unidad',
+                'tipo_moneda' => 'nullable|string|in:PEN,USD',
+                'recibe_ofertas' => 'nullable|boolean',
+                'destacado' => 'nullable|boolean',
+                'imagen_stock' => 'nullable|string', // Imagen específica para el stock
             ]);
 
-            // Procesar imagen si se proporciona (base64, URL o ruta)
-            if (isset($validated['imagen'])) {
-                $imagen = $this->imageService->saveBase64Image($validated['imagen'], 'productos');
-                $validated['imagen'] = $imagen ?? '-';
-            }
-
-            $updated = $this->productoService->update($id, $validated);
-            
-            if (!$updated) {
+            // Verificar que el producto existe
+            $producto = $this->productoService->getById($id);
+            if (!$producto) {
                 return $this->notFoundResponse('Producto no encontrado');
             }
 
-            $producto = $this->productoService->getById($id);
+            // Verificar que el usuario es dueño del producto
+            if ($producto->getIdUsuario() != $user->id_usuario) {
+                return $this->errorResponse(
+                    message: 'No tienes permiso para modificar este producto',
+                    code: 403,
+                    codeError: '403',
+                    title: 'Acceso denegado'
+                );
+            }
+
+            // Separar datos de producto y stock
+            $productoData = [];
+            $stockData = [];
+
+            // Procesar campos del producto
+            if (isset($validated['nombre'])) {
+                $productoData['nombre'] = $validated['nombre'];
+            }
+            if (isset($validated['descripcion'])) {
+                $productoData['descripcion'] = $validated['descripcion'];
+            }
+            if (isset($validated['imagen'])) {
+                $imagen = $this->imageService->saveBase64Image($validated['imagen'], 'productos');
+                $productoData['imagen'] = $imagen ?? '-';
+            }
+            if (isset($validated['id_subcategoria'])) {
+                $productoData['id_subcategoria'] = $validated['id_subcategoria'];
+            }
+            if (isset($validated['estado'])) {
+                $productoData['estado'] = $validated['estado'];
+            }
+
+            // Procesar campos del stock
+            if (isset($validated['precio'])) {
+                $stockData['precio'] = $validated['precio'];
+            }
+            if (isset($validated['cantidad'])) {
+                $stockData['cantidad'] = $validated['cantidad'];
+            }
+            if (isset($validated['id_unidad'])) {
+                $stockData['id_unidad'] = $validated['id_unidad'];
+            }
+            if (isset($validated['tipo_moneda'])) {
+                $stockData['tipo_moneda'] = $validated['tipo_moneda'];
+            }
+            if (isset($validated['recibe_ofertas'])) {
+                $stockData['recibe_ofertas'] = $validated['recibe_ofertas'];
+            }
+            if (isset($validated['destacado'])) {
+                $stockData['destacado'] = $validated['destacado'];
+            }
+            if (isset($validated['imagen_stock'])) {
+                $imagenStock = $this->imageService->saveBase64Image($validated['imagen_stock'], 'stocks');
+                $stockData['imagen'] = $imagenStock;
+            }
+
+            // Actualizar producto si hay datos
+            if (!empty($productoData)) {
+                $updated = $this->productoService->update($id, $productoData);
+                if (!$updated) {
+                    return $this->errorResponse(
+                        message: 'Error al actualizar el producto',
+                        code: 500,
+                        codeError: '500',
+                        title: 'Error del servidor'
+                    );
+                }
+            }
+
+            // Buscar y actualizar stock si hay datos
+            if (!empty($stockData)) {
+                $stocks = $this->stockService->findByProducto($id);
+                $stockUsuario = null;
+                
+                // Buscar el stock del usuario autenticado
+                foreach ($stocks as $stock) {
+                    if ($stock->getIdUsuario() == $user->id_usuario) {
+                        $stockUsuario = $stock;
+                        break;
+                    }
+                }
+
+                if ($stockUsuario) {
+                    // Actualizar stock existente
+                    $this->stockService->update($stockUsuario->getId(), $stockData);
+                } else {
+                    // Crear nuevo stock si no existe
+                    $stockData['id_producto'] = $id;
+                    $stockData['id_usuario'] = $user->id_usuario;
+                    if (!isset($stockData['cantidad'])) {
+                        $stockData['cantidad'] = 0;
+                    }
+                    $this->stockService->create($stockData);
+                }
+            }
+
+            // Obtener producto actualizado con stock
+            $productoActualizado = $this->productoService->getById($id);
+            $productoArray = $productoActualizado->toArray();
+
+            // Obtener stock actualizado
+            $stocks = $this->stockService->findByProducto($id);
+            $stockUsuario = null;
+            foreach ($stocks as $stock) {
+                if ($stock->getIdUsuario() == $user->id_usuario) {
+                    $stockUsuario = $stock;
+                    break;
+                }
+            }
+
+            if ($stockUsuario) {
+                $productoArray['stock'] = $stockUsuario->toArray();
+                
+                // Obtener información de la unidad
+                if ($stockUsuario->getIdUnidad()) {
+                    $unidad = $this->unidadService->getById($stockUsuario->getIdUnidad());
+                    if ($unidad) {
+                        if (is_array($unidad)) {
+                            $productoArray['stock']['unidad'] = $unidad;
+                        } elseif (is_object($unidad)) {
+                            $productoArray['stock']['unidad'] = [
+                                'id_unidad' => $unidad->id_unidad ?? $stockUsuario->getIdUnidad(),
+                                'nombre' => $unidad->nombre ?? null,
+                            ];
+                        }
+                    }
+                }
+            }
+
             return $this->successResponse(
-                data: $producto,
+                data: $productoArray,
                 message: 'Producto actualizado exitosamente',
                 title: 'Producto actualizado'
             );
@@ -588,6 +733,7 @@ class ProductoController extends BaseController
                 'id_unidad' => 'nullable|integer|exists:unidad,id_unidad',
                 'tipo_moneda' => 'nullable|string|in:PEN,USD',
                 'recibe_ofertas' => 'nullable|boolean',
+                'destacado' => 'nullable|boolean',
                 'imagen_stock' => 'nullable|string', // Imagen específica para el stock (opcional)
             ]);
 
@@ -620,6 +766,7 @@ class ProductoController extends BaseController
                 'id_unidad' => $validated['id_unidad'] ?? null,
                 'tipo_moneda' => $validated['tipo_moneda'] ?? 'PEN',
                 'recibe_ofertas' => $validated['recibe_ofertas'] ?? false,
+                'destacado' => $validated['destacado'] ?? false,
                 'imagen' => $imagenStock ?? null,
             ];
 
