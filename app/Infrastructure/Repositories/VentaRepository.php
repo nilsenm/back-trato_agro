@@ -50,7 +50,10 @@ class VentaRepository extends BaseRepository implements VentaRepositoryInterface
 
     public function all(array $columns = ['*']): array
     {
-        $models = parent::all($columns);
+        // Obtener la colección directamente del modelo antes de convertir a array
+        $models = $columns === ['*'] 
+            ? $this->model->all() 
+            : $this->model->get($columns);
         
         return $models->map(function ($model) {
             return $this->toEntity($model);
@@ -63,6 +66,18 @@ class VentaRepository extends BaseRepository implements VentaRepositoryInterface
         return $this->toEntity($model);
     }
 
+    public function update($id, array $data): bool
+    {
+        // Buscar el modelo Eloquent directamente, no la entidad
+        $model = $this->model->find($id);
+        
+        if (!$model) {
+            return false;
+        }
+
+        return $model->update($data);
+    }
+
     private function toEntity(VentaModel $model): Venta
     {
         $fecha = $model->fecha ? new \DateTime($model->fecha) : null;
@@ -72,7 +87,10 @@ class VentaRepository extends BaseRepository implements VentaRepositoryInterface
             $model->id_distrito,
             $fecha,
             $hora,
-            $model->id_usuario_compra
+            $model->id_usuario_compra,
+            $model->estado ?? 'PEDIDO',
+            $model->direccion,
+            $model->tipo_pago ?? 'CONTRA_ENTREGA'
         );
         
         if ($model->id_venta) {

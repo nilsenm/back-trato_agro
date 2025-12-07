@@ -15,6 +15,9 @@ class VentaModel extends Model
         'hora',
         'id_usuario_compra',
         'id_distrito',
+        'estado',
+        'direccion',
+        'tipo_pago',
     ];
 
     protected $casts = [

@@ -73,6 +73,7 @@ Route::middleware(['jwt.auth'])->group(function () {
     Route::put('carrito/{id}', [CarritoController::class, 'update']); // Actualizar cantidad
     Route::delete('carrito/{id}', [CarritoController::class, 'destroy']); // Eliminar item
     Route::post('carrito/limpiar', [CarritoController::class, 'limpiar']); // Limpiar todo el carrito
+    Route::post('carrito/finalizar-venta', [CarritoController::class, 'finalizarVenta']); // Finalizar venta desde el carrito
 });
 
 // Stocks (protegido con JWT)
@@ -133,9 +134,15 @@ Route::middleware(['jwt.auth'])->group(function () {
 
 // Ventas (protegido con JWT)
 Route::middleware(['jwt.auth'])->group(function () {
-    Route::apiResource('ventas', VentaController::class);
+    // IMPORTANTE: Las rutas específicas DEBEN ir ANTES de apiResource
+    // porque apiResource crea GET /ventas/{venta} que captura cualquier ruta
+    Route::get('ventas/mis-compras', [VentaController::class, 'misCompras']); // Mis compras detalladas
+    Route::get('ventas/mis-ventas', [VentaController::class, 'misVentas']); // Mis ventas como vendedor
+    Route::put('ventas/{id}/estado', [VentaController::class, 'cambiarEstado']); // Cambiar estado de venta
     Route::get('ventas/usuario/{idUsuario}', [VentaController::class, 'byUsuario']);
     Route::get('ventas/usuario/{idUsuario}/ultima', [VentaController::class, 'ultimaVenta']);
+    // apiResource debe ir al final para no capturar las rutas específicas
+    Route::apiResource('ventas', VentaController::class);
 });
 
 // Detalles de Venta (protegido con JWT)
