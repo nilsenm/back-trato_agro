@@ -389,3 +389,5 @@ Los estados posibles son:
 - **ENVIADO**: La compra ha sido enviada al comprador
 - **ENTREGADO**: La compra ha sido entregada al comprador
 
+
+

@@ -271,3 +271,5 @@ curl -X PUT http://localhost:8080/api/ventas/1/estado \
 
 5. **Ordenamiento**: Las ventas se ordenan por `id_venta` descendente (más recientes primero).
 
+
+
